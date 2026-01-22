@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escenario A: Softphone - Recibir Llamadas desde Studio</title>
+    <title>Scenario A: Softphone - Receive Calls from Studio</title>
     <style>
         * {
             margin: 0;
@@ -213,60 +213,60 @@
 </head>
 <body>
     <div class="container">
-        <h1>📞 Softphone - Agente Web</h1>
-        <p class="subtitle">Escenario A: Recibir llamadas desde Studio Flow</p>
+        <h1>📞 Softphone - Web Agent</h1>
+        <p class="subtitle">Scenario A: Receive calls from Studio Flow</p>
 
         <div class="input-group">
-            <label for="identity">Identity del Agente:</label>
-            <input type="text" id="identity" value="agente123" placeholder="agente123">
+            <label for="identity">Agent Identity:</label>
+            <input type="text" id="identity" value="agent123" placeholder="agent123">
         </div>
 
         <div class="button-group">
-            <button id="register" class="btn-primary">Conectar</button>
-            <button id="hangup" class="btn-danger" disabled>Colgar</button>
+            <button id="register" class="btn-primary">Connect</button>
+            <button id="hangup" class="btn-danger" disabled>Hang Up</button>
         </div>
 
         <button id="testStudio" class="btn-secondary" style="width: 100%; margin-bottom: 20px;" disabled>
-            Probar Llamada desde Studio
+            Test Call from Studio
         </button>
 
         <div id="status" class="status info">
-            ⏳ Desconectado. Haz clic en "Conectar" para registrarte.
+            ⏳ Disconnected. Click "Connect" to register.
         </div>
 
         <div id="callInfo" class="call-info">
-            <p><strong>Llamada Activa VoIP</strong></p>
+            <p><strong>Active VoIP Call</strong></p>
             <p id="callFrom"></p>
             <p id="callTo"></p>
             
             <div class="audio-controls">
-                <button id="muteBtn" class="btn-secondary" style="flex: 1;">🔇 Silenciar</button>
-                <button id="unmuteBtn" class="btn-secondary" style="flex: 1; display: none;">🔊 Activar</button>
+                <button id="muteBtn" class="btn-secondary" style="flex: 1;">🔇 Mute</button>
+                <button id="unmuteBtn" class="btn-secondary" style="flex: 1; display: none;">🔊 Unmute</button>
             </div>
 
             <div id="stats" class="stats">
-                <p><strong>Estadísticas VoIP:</strong></p>
+                <p><strong>VoIP Statistics:</strong></p>
                 <p>Codec: <span id="codec">-</span></p>
-                <p>Estado: <span id="callStatus">-</span></p>
-                <p>Duración: <span id="duration">00:00</span></p>
+                <p>Status: <span id="callStatus">-</span></p>
+                <p>Duration: <span id="duration">00:00</span></p>
             </div>
         </div>
     </div>
 
-    <!-- Cargar el SDK de Twilio Voice SDK 2.x desde CDN -->
-    <!-- Intentar múltiples CDNs en caso de que uno falle -->
+    <!-- Load Twilio Voice SDK 2.x from CDN -->
+    <!-- Try multiple CDNs in case one fails -->
     <script>
         (function() {
             const CDNs = [
-                // SDK 2.x desde npm (más confiable)
+                // SDK 2.x from npm (more reliable)
                 'https://unpkg.com/@twilio/voice-sdk@2.7.2/dist/twilio.min.js',
                 'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.7.2/dist/twilio.min.js',
-                // Versión sin minificar para debugging
+                // Unminified version for debugging
                 'https://unpkg.com/@twilio/voice-sdk@2.7.2/dist/twilio.js',
-                // Versiones anteriores del SDK 2.x
+                // Previous versions of SDK 2.x
                 'https://unpkg.com/@twilio/voice-sdk@2.6.0/dist/twilio.min.js',
                 'https://unpkg.com/@twilio/voice-sdk@2.5.0/dist/twilio.min.js',
-                // CDN oficial de Twilio (puede no tener 2.x)
+                // Official Twilio CDN (may not have 2.x)
                 'https://sdk.twilio.com/js/client/releases/2.7.2/twilio.min.js',
                 'https://sdk.twilio.com/js/client/releases/2.6.0/twilio.min.js'
             ];
@@ -282,21 +282,21 @@
                     script.defer = true;
                     
                     script.onload = () => {
-                        console.log(`✅ Script cargado desde: ${src}`);
-                        // Esperar un momento para que el SDK se inicialice
+                        console.log(`✅ Script loaded from: ${src}`);
+                        // Wait a moment for SDK to initialize
                         setTimeout(() => {
                             if (typeof window.Twilio !== 'undefined' || typeof Twilio !== 'undefined') {
                                 loaded = true;
                                 resolve();
                             } else {
-                                console.warn(`⚠️ Script cargado pero Twilio no está disponible aún`);
-                                // Dar más tiempo
+                                console.warn(`⚠️ Script loaded but Twilio is not available yet`);
+                                // Give more time
                                 setTimeout(() => {
                                     if (typeof window.Twilio !== 'undefined' || typeof Twilio !== 'undefined') {
                                         loaded = true;
                                         resolve();
                                     } else {
-                                        reject(new Error('Twilio no se inicializó'));
+                                        reject(new Error('Twilio did not initialize'));
                                     }
                                 }, 1000);
                             }
@@ -304,8 +304,8 @@
                     };
                     
                     script.onerror = () => {
-                        console.warn(`❌ Error cargando desde: ${src}`);
-                        reject(new Error(`Error cargando ${src}`));
+                        console.warn(`❌ Error loading from: ${src}`);
+                        reject(new Error(`Error loading ${src}`));
                     };
                     
                     document.head.appendChild(script);
@@ -317,19 +317,19 @@
                     try {
                         await loadScript(CDNs[i]);
                         if (loaded) {
-                            console.log(`✅ Twilio SDK cargado exitosamente desde: ${CDNs[i]}`);
+                            console.log(`✅ Twilio SDK loaded successfully from: ${CDNs[i]}`);
                             return;
                         }
                     } catch (error) {
-                        console.warn(`⚠️ Intento ${i + 1} falló:`, error.message);
+                        console.warn(`⚠️ Attempt ${i + 1} failed:`, error.message);
                         if (i === CDNs.length - 1) {
-                            console.error('❌ Todos los CDNs fallaron');
+                            console.error('❌ All CDNs failed');
                         }
                     }
                 }
             }
             
-            // Cargar cuando el DOM esté listo
+            // Load when DOM is ready
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', tryLoad);
             } else {
@@ -339,26 +339,26 @@
     </script>
     
     <script>
-        // Verificar que se acceda a través del servidor
+        // Verify access through server
         if (window.location.protocol === 'file:') {
             document.body.innerHTML = `
                 <div style="padding: 40px; text-align: center; font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto;">
-                    <h1 style="color: #e74c3c;">❌ Error de Acceso</h1>
+                    <h1 style="color: #e74c3c;">❌ Access Error</h1>
                     <p style="font-size: 18px; color: #555; margin: 20px 0;">
-                        Estás abriendo el archivo directamente desde el sistema de archivos.
+                        You are opening the file directly from the file system.
                     </p>
                     <p style="font-size: 16px; color: #777; margin: 20px 0;">
-                        Para que funcione correctamente, debes acceder a través del servidor:
+                        For it to work correctly, you must access through the server:
                     </p>
                     <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
                         <p style="font-size: 20px; font-weight: bold; color: #667eea;">
-                            <a href="http://localhost:4040/escenario-a.html" style="color: #667eea; text-decoration: none;">
-                                http://localhost:4040/escenario-a.html
+                            <a href="http://localhost:4040/scenario-a.html" style="color: #667eea; text-decoration: none;">
+                                http://localhost:4040/scenario-a.html
                             </a>
                         </p>
                     </div>
                     <p style="font-size: 14px; color: #999; margin-top: 30px;">
-                        Asegúrate de que el servidor esté corriendo: <code>npm start</code>
+                        Make sure the server is running: <code>npm start</code>
                     </p>
                 </div>
             `;
@@ -366,55 +366,55 @@
     </script>
     
     <script type="module">
-        // Esperar a que el SDK se cargue completamente
+        // Wait for SDK to load completely
         let Device;
         
-        // Función para esperar a que Twilio esté disponible
+        // Function to wait for Twilio to be available
         async function waitForTwilio() {
             let attempts = 0;
-            const maxAttempts = 100; // 10 segundos máximo
+            const maxAttempts = 100; // 10 seconds maximum
             
-            console.log("⏳ Esperando a que Twilio SDK se cargue...");
+            console.log("⏳ Waiting for Twilio SDK to load...");
             
             while (attempts < maxAttempts) {
-                // Verificar múltiples formas en que Twilio puede estar disponible
+                // Check multiple ways Twilio can be available
                 let TwilioObj = null;
                 
-                // 1. Verificar window.Twilio
+                // 1. Check window.Twilio
                 if (typeof window !== 'undefined' && window.Twilio) {
                     TwilioObj = window.Twilio;
-                    console.log("📦 Twilio encontrado en window.Twilio");
+                    console.log("📦 Twilio found in window.Twilio");
                 }
-                // 2. Verificar Twilio global
+                // 2. Check global Twilio
                 else if (typeof Twilio !== 'undefined') {
                     TwilioObj = Twilio;
-                    console.log("📦 Twilio encontrado globalmente");
+                    console.log("📦 Twilio found globally");
                 }
-                // 3. Verificar si hay algún objeto con Device
+                // 3. Check if there's any object with Device
                 else if (typeof window !== 'undefined') {
-                    // Buscar cualquier propiedad que pueda ser Twilio
+                    // Search for any property that might be Twilio
                     for (const key in window) {
                         if (window[key] && typeof window[key] === 'object' && window[key].Device) {
                             TwilioObj = window[key];
-                            console.log(`📦 Twilio encontrado en window.${key}`);
+                            console.log(`📦 Twilio found in window.${key}`);
                             break;
                         }
                     }
                 }
                 
                 if (TwilioObj) {
-                    // Intentar obtener Device de diferentes formas
+                    // Try to get Device in different ways
                     Device = TwilioObj.Device || 
                              TwilioObj.default?.Device || 
                              (TwilioObj.constructor && TwilioObj.constructor.name === 'Device' ? TwilioObj : null);
                     
                     if (Device && typeof Device === 'function') {
-                        console.log("✅ Twilio Device disponible:", typeof Device);
+                        console.log("✅ Twilio Device available:", typeof Device);
                         console.log("📋 Device constructor:", Device.name || 'anonymous');
                         return Device;
                     } else {
-                        console.log("⚠️ Twilio encontrado pero Device no está disponible");
-                        console.log("📋 Propiedades de Twilio:", Object.keys(TwilioObj));
+                        console.log("⚠️ Twilio found but Device is not available");
+                        console.log("📋 Twilio properties:", Object.keys(TwilioObj));
                     }
                 }
                 
@@ -422,33 +422,33 @@
                 attempts++;
                 
                 if (attempts % 10 === 0) {
-                    console.log(`⏳ Esperando... (${attempts * 100}ms)`);
-                    console.log("🔍 Estado actual:");
+                    console.log(`⏳ Waiting... (${attempts * 100}ms)`);
+                    console.log("🔍 Current status:");
                     console.log("  - window.Twilio:", typeof window !== 'undefined' ? typeof window.Twilio : 'N/A');
-                    console.log("  - Twilio global:", typeof Twilio);
+                    console.log("  - Global Twilio:", typeof Twilio);
                 }
             }
             
-            console.error("❌ Twilio SDK no se cargó después de 10 segundos");
-            console.error("Verifica:");
-            console.error("1. Tu conexión a internet");
-            console.error("2. Que el CDN de Twilio esté accesible");
-            console.error("3. La consola del navegador para errores de red");
+            console.error("❌ Twilio SDK did not load after 10 seconds");
+            console.error("Verify:");
+            console.error("1. Your internet connection");
+            console.error("2. That Twilio CDN is accessible");
+            console.error("3. Browser console for network errors");
             
-            throw new Error("Twilio SDK no se cargó. Verifica tu conexión a internet.");
+            throw new Error("Twilio SDK did not load. Verify your internet connection.");
         }
         
-        // Esperar a que el SDK esté listo antes de continuar
+        // Wait for SDK to be ready before continuing
         try {
             Device = await waitForTwilio();
         } catch (error) {
-            console.error("❌ Error fatal:", error);
-            // Mostrar error en la página
+            console.error("❌ Fatal error:", error);
+            // Show error on page
             document.body.innerHTML = `
                 <div style="padding: 20px; text-align: center; font-family: Arial;">
-                    <h2>❌ Error cargando Twilio SDK</h2>
+                    <h2>❌ Error loading Twilio SDK</h2>
                     <p>${error.message}</p>
-                    <p>Por favor, verifica tu conexión a internet y recarga la página.</p>
+                    <p>Please verify your internet connection and reload the page.</p>
                 </div>
             `;
             throw error;
@@ -470,93 +470,93 @@
 
         async function getToken(identity) {
             try {
-                // Detectar si estamos en file://
+                // Detect if we're in file://
                 if (window.location.protocol === 'file:') {
-                    throw new Error('Debes acceder a través del servidor. Abre: http://localhost:4040/escenario-a.html');
+                    throw new Error('You must access through the server. Open: http://localhost:4040/scenario-a.html');
                 }
                 
                 const response = await fetch(`/token?identity=${encodeURIComponent(identity)}`);
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(data.error || "Error obteniendo token");
+                    throw new Error(data.error || "Error getting token");
                 }
                 return data.token;
             } catch (error) {
-                throw new Error(`Error obteniendo token: ${error.message}`);
+                throw new Error(`Error getting token: ${error.message}`);
             }
         }
 
         registerBtn.onclick = async () => {
-            const identity = identityInput.value.trim() || "agente123";
+            const identity = identityInput.value.trim() || "agent123";
             
             if (!identity) {
-                updateStatus("❌ Por favor ingresa un identity", "error");
+                updateStatus("❌ Please enter an identity", "error");
                 return;
             }
 
             try {
-                updateStatus("⏳ Obteniendo token...", "info");
+                updateStatus("⏳ Getting token...", "info");
                 registerBtn.disabled = true;
 
                 const token = await getToken(identity);
 
-                updateStatus("⏳ Registrando dispositivo...", "info");
+                updateStatus("⏳ Registering device...", "info");
 
-                // Configuración optimizada para VoIP
+                // Optimized configuration for VoIP
                 device = new Device(token, { 
-                    logLevel: 1, // Logs para debugging
-                    // Priorizar Opus para mejor calidad VoIP, luego PCMU como fallback
+                    logLevel: 1, // Logs for debugging
+                    // Prioritize Opus for better VoIP quality, then PCMU as fallback
                     codecPreferences: ['opus', 'pcmu'],
-                    // Permitir llamadas entrantes mientras hay una activa
+                    // Allow incoming calls while one is active
                     allowIncomingWhileBusy: false,
-                    // Configuración de audio
+                    // Audio configuration
                     fakeLocalDTMF: false,
-                    // Habilitar estadísticas de llamada
+                    // Enable call statistics
                     enableRTCStats: true
                 });
 
                 device.on("registered", () => {
-                    updateStatus(`✅ Registrado como "${identity}" (VoIP activo). Listo para recibir llamadas desde Studio.`, "success");
+                    updateStatus(`✅ Registered as "${identity}" (VoIP active). Ready to receive calls from Studio.`, "success");
                     registerBtn.disabled = true;
-                    registerBtn.textContent = "Conectado";
+                    registerBtn.textContent = "Connected";
                     testStudioBtn.disabled = false;
                 });
 
-                // Eventos adicionales para mejor manejo VoIP
+                // Additional events for better VoIP handling
                 device.on("tokenWillExpire", async () => {
-                    updateStatus("⚠️ Token expirando, renovando...", "warning");
+                    updateStatus("⚠️ Token expiring, renewing...", "warning");
                     try {
                         const newToken = await getToken(identity);
                         await device.updateToken(newToken);
-                        updateStatus("✅ Token renovado", "success");
+                        updateStatus("✅ Token renewed", "success");
                     } catch (error) {
-                        updateStatus(`❌ Error renovando token: ${error.message}`, "error");
+                        updateStatus(`❌ Error renewing token: ${error.message}`, "error");
                     }
                 });
 
                 device.on("error", (error) => {
-                    console.error("Error del dispositivo VoIP:", error);
-                    updateStatus(`❌ Error VoIP: ${error.message}`, "error");
+                    console.error("VoIP device error:", error);
+                    updateStatus(`❌ VoIP error: ${error.message}`, "error");
                     registerBtn.disabled = false;
-                    registerBtn.textContent = "Conectar";
+                    registerBtn.textContent = "Connect";
                 });
 
                 device.on("incoming", (call) => {
-                    updateStatus("📞 Llamada VoIP entrante desde Studio...", "warning");
+                    updateStatus("📞 Incoming VoIP call from Studio...", "warning");
                     activeCall = call;
                     hangupBtn.disabled = false;
 
-                    // Mostrar información de la llamada
-                    document.getElementById("callFrom").textContent = `Desde: ${call.from || "Studio Flow"}`;
-                    document.getElementById("callTo").textContent = `Para: ${call.to || identity}`;
+                    // Show call information
+                    document.getElementById("callFrom").textContent = `From: ${call.from || "Studio Flow"}`;
+                    document.getElementById("callTo").textContent = `To: ${call.to || identity}`;
                     callInfoEl.classList.add("active");
                     document.getElementById("stats").classList.add("active");
 
-                    // Aceptar automáticamente (puedes cambiar esto para mostrar UI de aceptar/rechazar)
+                    // Accept automatically (you can change this to show accept/reject UI)
                     call.accept();
-                    updateStatus("✅ Llamada VoIP conectada", "success");
+                    updateStatus("✅ VoIP call connected", "success");
 
-                    // Iniciar contador de duración
+                    // Start duration counter
                     let startTime = Date.now();
                     const durationInterval = setInterval(() => {
                         const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -566,12 +566,12 @@
                             `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
                     }, 1000);
 
-                    // Eventos de la llamada VoIP
+                    // VoIP call events
                     call.on("accept", () => {
-                        updateStatus("✅ Llamada VoIP aceptada", "success");
-                        document.getElementById("callStatus").textContent = "Conectada";
+                        updateStatus("✅ VoIP call accepted", "success");
+                        document.getElementById("callStatus").textContent = "Connected";
                         
-                        // Obtener información del codec usado
+                        // Get codec information
                         if (call.codec) {
                             document.getElementById("codec").textContent = call.codec.toUpperCase();
                         }
@@ -579,7 +579,7 @@
 
                     call.on("disconnect", () => {
                         clearInterval(durationInterval);
-                        updateStatus(`☎️ Llamada VoIP terminada. Listo para recibir nuevas llamadas.`, "info");
+                        updateStatus(`☎️ VoIP call ended. Ready to receive new calls.`, "info");
                         activeCall = null;
                         hangupBtn.disabled = true;
                         callInfoEl.classList.remove("active");
@@ -590,7 +590,7 @@
 
                     call.on("cancel", () => {
                         clearInterval(durationInterval);
-                        updateStatus("📵 Llamada cancelada", "info");
+                        updateStatus("📵 Call cancelled", "info");
                         activeCall = null;
                         hangupBtn.disabled = true;
                         callInfoEl.classList.remove("active");
@@ -599,17 +599,17 @@
 
                     call.on("reject", () => {
                         clearInterval(durationInterval);
-                        updateStatus("❌ Llamada rechazada", "error");
+                        updateStatus("❌ Call rejected", "error");
                         activeCall = null;
                         hangupBtn.disabled = true;
                         callInfoEl.classList.remove("active");
                         document.getElementById("stats").classList.remove("active");
                     });
 
-                    // Manejo de errores en la llamada
+                    // Call error handling
                     call.on("error", (error) => {
-                        console.error("Error en llamada VoIP:", error);
-                        updateStatus(`❌ Error en llamada: ${error.message}`, "error");
+                        console.error("Error in VoIP call:", error);
+                        updateStatus(`❌ Error in call: ${error.message}`, "error");
                     });
                 });
 
@@ -617,7 +617,7 @@
             } catch (error) {
                 updateStatus(`❌ Error: ${error.message}`, "error");
                 registerBtn.disabled = false;
-                registerBtn.textContent = "Conectar";
+                registerBtn.textContent = "Connect";
             }
         };
 
@@ -631,7 +631,7 @@
             }
         };
 
-        // Controles de audio VoIP
+        // VoIP audio controls
         const muteBtn = document.getElementById("muteBtn");
         const unmuteBtn = document.getElementById("unmuteBtn");
 
@@ -652,11 +652,11 @@
         };
 
         testStudioBtn.onclick = async () => {
-            const identity = identityInput.value.trim() || "agente123";
+            const identity = identityInput.value.trim() || "agent123";
             
             try {
                 testStudioBtn.disabled = true;
-                updateStatus("⏳ Disparando Studio Flow...", "info");
+                updateStatus("⏳ Triggering Studio Flow...", "info");
 
                 const response = await fetch("/studio/execute", {
                     method: "POST",
@@ -665,7 +665,7 @@
                     },
                     body: JSON.stringify({
                         identity: identity,
-                        from: undefined, // Se usará TWILIO_CALLER_ID del .env
+                        from: undefined, // Will use TWILIO_CALLER_ID from .env
                         parameters: {
                             identity: identity
                         }
@@ -675,9 +675,9 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    updateStatus(`✅ Studio Flow ejecutado. Deberías recibir una llamada pronto. Execution SID: ${data.executionSid}`, "success");
+                    updateStatus(`✅ Studio Flow executed. You should receive a call soon. Execution SID: ${data.executionSid}`, "success");
                 } else {
-                    updateStatus(`❌ Error: ${data.error || "Error desconocido"}`, "error");
+                    updateStatus(`❌ Error: ${data.error || "Unknown error"}`, "error");
                 }
             } catch (error) {
                 updateStatus(`❌ Error: ${error.message}`, "error");

@@ -11,31 +11,31 @@ const { VoiceGrant } = AccessToken;
 
 app.use(cors());
 app.use(express.json());
-// Configuración para recibir datos de Twilio (application/x-www-form-urlencoded)
+// Configuration to receive data from Twilio (application/x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// Endpoint para generar Access Token
+// Endpoint to generate Access Token
 app.get("/token", (req, res) => {
-  const identity = req.query.identity || "agente123";
+  const identity = req.query.identity || "agent123";
   
-  console.log(`\n🔑 Solicitud de token recibida para identity: ${identity}`);
+  console.log(`\n🔑 Token request received for identity: ${identity}`);
   console.log(`📋 Query params:`, req.query);
 
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_API_KEY_SID || !process.env.TWILIO_API_KEY_SECRET) {
-    console.error("❌ ERROR: Twilio credentials no configuradas");
+    console.error("❌ ERROR: Twilio credentials not configured");
     console.error("   TWILIO_ACCOUNT_SID:", process.env.TWILIO_ACCOUNT_SID ? "✅" : "❌");
     console.error("   TWILIO_API_KEY_SID:", process.env.TWILIO_API_KEY_SID ? "✅" : "❌");
     console.error("   TWILIO_API_KEY_SECRET:", process.env.TWILIO_API_KEY_SECRET ? "✅" : "❌");
-    return res.status(500).json({ error: "Twilio credentials no configuradas" });
+    return res.status(500).json({ error: "Twilio credentials not configured" });
   }
   
-  console.log("✅ Credenciales encontradas, generando token...");
+  console.log("✅ Credentials found, generating token...");
 
-  // Configuración optimizada para VoIP
+  // Optimized configuration for VoIP
   const voiceGrant = new VoiceGrant({
-    outgoingApplicationSid: process.env.TWIML_APP_SID, // recomendado - esto hace que las llamadas salientes usen el webhook
-    incomingAllow: true, // Permite recibir llamadas VoIP
+    outgoingApplicationSid: process.env.TWIML_APP_SID, // recommended - this makes outgoing calls use the webhook
+    incomingAllow: true, // Allows receiving VoIP calls
   });
 
   const token = new AccessToken(
@@ -44,7 +44,7 @@ app.get("/token", (req, res) => {
     process.env.TWILIO_API_KEY_SECRET,
     { 
       identity,
-      // TTL del token (1 hora por defecto, suficiente para VoIP)
+      // Token TTL (1 hour by default, sufficient for VoIP)
       ttl: 3600
     }
   );
@@ -52,33 +52,33 @@ app.get("/token", (req, res) => {
   token.addGrant(voiceGrant);
 
   const tokenJwt = token.toJwt();
-  console.log(`✅ Token generado exitosamente para identity: ${identity}`);
-  console.log(`   Token length: ${tokenJwt.length} caracteres`);
+  console.log(`✅ Token generated successfully for identity: ${identity}`);
+  console.log(`   Token length: ${tokenJwt.length} characters`);
   
   res.json({ 
     identity, 
     token: tokenJwt,
-    // Información adicional para el cliente VoIP
+    // Additional information for VoIP client
     voip: {
-      codec: 'opus', // Codec recomendado para mejor calidad VoIP
+      codec: 'opus', // Recommended codec for better VoIP quality
       supported: true
     }
   });
   
-  console.log(`📤 Token enviado al cliente\n`);
+  console.log(`📤 Token sent to client\n`);
 });
 
-// Endpoint alternativo que recibe el número como query parameter
-// Útil cuando los parámetros de device.connect no llegan al webhook principal
+// Alternative endpoint that receives the number as query parameter
+// Useful when device.connect parameters don't reach the main webhook
 app.get("/voice-call/:phoneNumber", (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
   const to = req.params.phoneNumber;
 
-  console.log(`=== Llamada alternativa recibida ===`);
-  console.log(`Número destino: ${to}`);
+  console.log(`=== Alternative call received ===`);
+  console.log(`Destination number: ${to}`);
 
   if (!to) {
-    twiml.say("No se proporcionó un número de destino");
+    twiml.say("No destination number provided");
     return res.type("text/xml").send(twiml.toString());
   }
 
@@ -94,120 +94,120 @@ app.get("/voice-call/:phoneNumber", (req, res) => {
   res.type("text/xml").send(twiml.toString());
 });
 
-// Endpoint para manejar llamadas de voz (TwiML)
-// Este endpoint se usa cuando el navegador llama a un número PSTN
-// URL completa: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice
-// Esta URL debe configurarse en Twilio Console > TwiML Apps > Voice URL
+// Endpoint to handle voice calls (TwiML)
+// This endpoint is used when the browser calls a PSTN number
+// Full URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice
+// This URL must be configured in Twilio Console > TwiML Apps > Voice URL
 app.post("/voice", (req, res) => {
   const twiml = new twilio.twiml.VoiceResponse();
 
-  // Log completo del request para debugging
-  console.log("=== Request recibido en /voice ===");
-  console.log("Body completo:", req.body);
+  // Complete request log for debugging
+  console.log("=== Request received at /voice ===");
+  console.log("Full body:", req.body);
   console.log("Headers:", req.headers);
   console.log("Query params:", req.query);
 
-  // Intentar obtener 'To' de diferentes lugares
-  // Cuando usas device.connect({ params: { To: phoneNumber } }), 
-  // Twilio pasa esos parámetros personalizados al webhook
+  // Try to get 'To' from different places
+  // When you use device.connect({ params: { To: phoneNumber } }), 
+  // Twilio passes those custom parameters to the webhook
   let to = req.body.To || req.body.to || req.query.To || req.query.to;
   const from = req.body.From || req.body.from || req.query.From || req.query.from;
 
-  // Si 'To' viene en los parámetros de la llamada (cuando se usa device.connect con params)
+  // If 'To' comes in call parameters (when using device.connect with params)
   if (!to && req.body.Called) {
-    // Cuando Twilio llama al webhook, puede usar 'Called' para el destino
+    // When Twilio calls the webhook, it may use 'Called' for the destination
     to = req.body.Called;
   }
 
-  // Los parámetros personalizados de device.connect({ params: { To: ... } })
-  // pueden venir directamente en el body con el mismo nombre
-  // También verificar todos los campos del body por si viene con otro nombre
+  // Custom parameters from device.connect({ params: { To: ... } })
+  // may come directly in the body with the same name
+  // Also check all body fields in case it comes with another name
   if (!to && req.body) {
-    // Buscar cualquier campo que pueda contener el número
+    // Search for any field that might contain the number
     const bodyKeys = Object.keys(req.body);
     for (const key of bodyKeys) {
       const value = req.body[key];
-      // Verificar si el valor parece un número de teléfono (contiene + o es un número)
+      // Check if the value looks like a phone number (contains + or is a number)
       if (value && typeof value === 'string' && value.trim() !== '' && 
           (key.toLowerCase().includes('to') || key.toLowerCase().includes('called') ||
            key.toLowerCase().includes('number') || key.toLowerCase().includes('phone'))) {
-        // Verificar que sea un número válido (contiene + o solo dígitos)
+        // Verify it's a valid number (contains + or only digits)
         if (value.match(/^\+?[1-9]\d{1,14}$/) || value.includes('+')) {
           to = value;
-          console.log(`Encontrado 'To' en el campo: ${key} = ${value}`);
+          console.log(`Found 'To' in field: ${key} = ${value}`);
           break;
         }
       }
     }
   }
 
-  // IMPORTANTE: Cuando usas device.connect({ params: { To: phoneNumber } }),
-  // los parámetros personalizados deberían llegar al webhook, pero a veces
-  // Twilio no los pasa correctamente. En ese caso, necesitamos otra solución.
+  // IMPORTANT: When you use device.connect({ params: { To: phoneNumber } }),
+  // custom parameters should reach the webhook, but sometimes
+  // Twilio doesn't pass them correctly. In that case, we need another solution.
   
-  // Si la llamada viene desde un cliente (client:Anonymous) y no tenemos 'To',
-  // esto es un problema de configuración. Los parámetros de device.connect
-  // deberían llegar, pero si no, necesitamos una alternativa.
+  // If the call comes from a client (client:Anonymous) and we don't have 'To',
+  // this is a configuration problem. device.connect parameters
+  // should arrive, but if not, we need an alternative.
 
-  console.log(`Llamada desde ${from} a ${to}`);
+  console.log(`Call from ${from} to ${to}`);
   
-  // Log adicional para debugging
+  // Additional log for debugging
   if (from && from.startsWith('client:')) {
-    console.log("⚠️ Llamada desde cliente web detectada");
-    console.log("Los parámetros de device.connect({ params: { To: ... } }) deberían llegar aquí");
+    console.log("⚠️ Web client call detected");
+    console.log("device.connect({ params: { To: ... } }) parameters should arrive here");
   }
 
-  // Si no tenemos 'To', pero la llamada viene desde un cliente (client:Anonymous),
-  // esto significa que es una llamada desde el navegador que necesita un destino
-  // En este caso, necesitamos que el frontend pase el número de otra manera
-  // o podemos usar un valor almacenado en sesión/cache, pero lo mejor es
-  // que el frontend pase el número correctamente en los params
+  // If we don't have 'To', but the call comes from a client (client:Anonymous),
+  // this means it's a call from the browser that needs a destination
+  // In this case, we need the frontend to pass the number another way
+  // or we can use a value stored in session/cache, but the best is
+  // that the frontend passes the number correctly in the params
   
   if (!to || to.trim() === '') {
-    console.error("ERROR: No se encontró el parámetro 'To' o está vacío");
-    console.error("Body recibido:", JSON.stringify(req.body, null, 2));
-    console.error("Query recibido:", JSON.stringify(req.query, null, 2));
-    console.error("\n⚠️ IMPORTANTE: Cuando usas 'Call using Twilio Client',");
-    console.error("el parámetro 'To' debe enviarse en device.connect({ params: { To: 'número' } })");
-    console.error("y Twilio lo pasará al webhook.");
-    console.error("\n💡 SOLUCIÓN: Verifica que:");
-    console.error("1. El frontend esté enviando: device.connect({ params: { To: phoneNumber } })");
-    console.error("2. El número tenga el formato correcto (ej: +14063445815)");
-    console.error("3. La TwiML App tenga configurada la Voice URL correctamente\n");
+    console.error("ERROR: 'To' parameter not found or is empty");
+    console.error("Body received:", JSON.stringify(req.body, null, 2));
+    console.error("Query received:", JSON.stringify(req.query, null, 2));
+    console.error("\n⚠️ IMPORTANT: When using 'Call using Twilio Client',");
+    console.error("the 'To' parameter must be sent in device.connect({ params: { To: 'number' } })");
+    console.error("and Twilio will pass it to the webhook.");
+    console.error("\n💡 SOLUTION: Verify that:");
+    console.error("1. Frontend is sending: device.connect({ params: { To: phoneNumber } })");
+    console.error("2. Number has correct format (e.g.: +14063445815)");
+    console.error("3. TwiML App has Voice URL configured correctly\n");
     
-    // Devolver un TwiML que indique el error pero no rompa la llamada
-    twiml.say("No se proporcionó un número de destino. Por favor, verifica la configuración.");
+    // Return TwiML that indicates error but doesn't break the call
+    twiml.say("No destination number provided. Please verify the configuration.");
     return res.type("text/xml").send(twiml.toString());
   }
 
-  // Configuración optimizada para VoIP a PSTN
+  // Optimized configuration for VoIP to PSTN
   const dial = twiml.dial({
     callerId: process.env.TWILIO_CALLER_ID || req.body.From,
-    timeout: 30, // Tiempo de espera para conectar
-    record: false, // Desactivar grabación por defecto (puedes activarla si necesitas)
-    // Configuración de audio para mejor calidad VoIP
+    timeout: 30, // Wait time to connect
+    record: false, // Disable recording by default (you can enable it if needed)
+    // Audio configuration for better VoIP quality
     answerOnMedia: false,
   });
 
-  // Agregar número con configuración VoIP
+  // Add number with VoIP configuration
   dial.number({
-    // Configuración para mejor calidad de audio VoIP
+    // Configuration for better VoIP audio quality
   }, to);
 
   res.type("text/xml").send(twiml.toString());
 });
 
-// Endpoint para disparar Studio Flow Execution
-// Escenario A: Studio llama al navegador
+// Endpoint to trigger Studio Flow Execution
+// Scenario A: Studio calls the browser
 app.post("/studio/execute", async (req, res) => {
   const { identity, to, from, parameters } = req.body;
 
   if (!process.env.STUDIO_FLOW_SID) {
-    return res.status(500).json({ error: "STUDIO_FLOW_SID no configurado" });
+    return res.status(500).json({ error: "STUDIO_FLOW_SID not configured" });
   }
 
   if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
-    return res.status(500).json({ error: "Twilio credentials no configuradas" });
+    return res.status(500).json({ error: "Twilio credentials not configured" });
   }
 
   const client = twilio(
@@ -216,7 +216,7 @@ app.post("/studio/execute", async (req, res) => {
   );
 
   try {
-    // Si se proporciona identity, el destino es client:identity
+    // If identity is provided, destination is client:identity
     const destination = identity ? `client:${identity}` : to;
 
     const execution = await client.studio.v2
@@ -224,18 +224,18 @@ app.post("/studio/execute", async (req, res) => {
       .executions.create({
         to: destination,
         from: from || process.env.TWILIO_CALLER_ID,
-        parameters: parameters || { identity: identity || "agente123" },
+        parameters: parameters || { identity: identity || "agent123" },
       });
 
     res.json({
       success: true,
       executionSid: execution.sid,
-      message: `Flow ejecutado. Llamada a ${destination}`,
+      message: `Flow executed. Call to ${destination}`,
     });
   } catch (error) {
-    console.error("Error ejecutando Studio Flow:", error);
+    console.error("Error executing Studio Flow:", error);
     res.status(500).json({
-      error: "Error ejecutando Studio Flow",
+      error: "Error executing Studio Flow",
       details: error.message,
     });
   }
@@ -243,12 +243,12 @@ app.post("/studio/execute", async (req, res) => {
 
 const PORT = process.env.PORT || 4040;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📞 Endpoint Token: http://localhost:${PORT}/token`);
-  console.log(`🎤 Endpoint Voice: http://localhost:${PORT}/voice`);
-  console.log(`🎬 Endpoint Studio: http://localhost:${PORT}/studio/execute`);
-  console.log(`\n🌐 URL ngrok configurada:`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📞 Token endpoint: http://localhost:${PORT}/token`);
+  console.log(`🎤 Voice endpoint: http://localhost:${PORT}/voice`);
+  console.log(`🎬 Studio endpoint: http://localhost:${PORT}/studio/execute`);
+  console.log(`\n🌐 ngrok URL configured:`);
   console.log(`   https://alton-aerobiologic-pulchritudinously.ngrok-free.dev`);
   console.log(`   Voice URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`);
-  console.log(`\n⚠️  Asegúrate de configurar esta URL en Twilio Console > TwiML Apps`);
+  console.log(`\n⚠️  Make sure to configure this URL in Twilio Console > TwiML Apps`);
 });

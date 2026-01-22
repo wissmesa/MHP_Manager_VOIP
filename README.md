@@ -1,30 +1,30 @@
-# Twilio Voice SDK - Aplicación de Llamadas VoIP
+# Twilio Voice SDK - VoIP Calling Application
 
-Esta aplicación implementa dos escenarios para usar Twilio Voice SDK con soporte completo de **VoIP (Voice over IP)**:
+This application implements two scenarios for using Twilio Voice SDK with full **VoIP (Voice over IP)** support:
 
-## Escenario A: Studio llama al navegador (Agente Web / Softphone VoIP)
-Permite que un Flow de Studio haga una llamada VoIP a un cliente web autenticado en el navegador. El agente recibe llamadas de alta calidad usando tecnología VoIP.
+## Scenario A: Studio calls the browser (Web Agent / VoIP Softphone)
+Allows a Studio Flow to make a VoIP call to a web client authenticated in the browser. The agent receives high-quality calls using VoIP technology.
 
-## Escenario B: Click-to-call desde la web a PSTN (VoIP a PSTN)
-Permite que un usuario en el navegador haga click y llame a un número telefónico (PSTN) usando VoIP. Incluye dos opciones: llamada directa con TwiML o usando Studio Flow como orquestador.
+## Scenario B: Click-to-call from web to PSTN (VoIP to PSTN)
+Allows a user in the browser to click and call a phone number (PSTN) using VoIP. Includes two options: direct call with TwiML or using Studio Flow as orchestrator.
 
-## Características VoIP Implementadas
+## Implemented VoIP Features
 
-✅ **Codecs optimizados**: Opus (prioritario) y PCMU como fallback para máxima calidad de audio  
-✅ **Controles de audio**: Mute/Unmute durante las llamadas  
-✅ **Estadísticas en tiempo real**: Codec usado, estado de llamada, duración  
-✅ **Renovación automática de tokens**: Manejo automático de expiración de tokens  
-✅ **Manejo robusto de eventos**: Reconexión, errores, cancelaciones  
-✅ **Configuración optimizada**: Ajustes específicos para VoIP (RTC stats, audio devices)
+✅ **Optimized codecs**: Opus (priority) and PCMU as fallback for maximum audio quality  
+✅ **Audio controls**: Mute/Unmute during calls  
+✅ **Real-time statistics**: Codec used, call status, duration  
+✅ **Automatic token renewal**: Automatic handling of token expiration  
+✅ **Robust event handling**: Reconnection, errors, cancellations  
+✅ **Optimized configuration**: Specific settings for VoIP (RTC stats, audio devices)
 
-## Configuración
+## Setup
 
-1. Instala las dependencias:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Crea un archivo `.env` con las siguientes variables (ver `ENV_SETUP.md` para detalles):
+2. Create a `.env` file with the following variables (see `ENV_SETUP.md` for details):
 ```env
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_API_KEY_SID=SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -33,56 +33,56 @@ TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_CALLER_ID=+17547151546
 TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 STUDIO_FLOW_SID=FWxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-PORT=3000
+PORT=4040
 ```
 
-3. Configura en Twilio Console:
-   - Crea una TwiML Application (Phone Numbers > TwiML Apps)
-   - Configura la Voice URL: `https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`
-   - Copia el SID de la TwiML App a `TWIML_APP_SID` en `.env`
-   - Obtén tus credenciales: Account SID, API Key (SID y Secret), Auth Token
+3. Configure in Twilio Console:
+   - Create a TwiML Application (Phone Numbers > TwiML Apps)
+   - Configure the Voice URL: `https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`
+   - Copy the TwiML App SID to `TWIML_APP_SID` in `.env`
+   - Get your credentials: Account SID, API Key (SID and Secret), Auth Token
 
-4. Inicia el servidor:
+4. Start the server:
 ```bash
 npm start
 ```
 
-5. Abre en el navegador:
-   - Página principal: `http://localhost:4040/`
-   - Escenario A: `http://localhost:4040/escenario-a.html`
-   - Escenario B: `http://localhost:4040/escenario-b.html`
+5. Open in browser:
+   - Main page: `http://localhost:4040/`
+   - Scenario A: `http://localhost:4040/scenario-a.html`
+   - Scenario B: `http://localhost:4040/scenario-b.html`
 
-**Nota**: La URL de ngrok configurada es `https://alton-aerobiologic-pulchritudinously.ngrok-free.dev`
-- Asegúrate de que ngrok esté corriendo y apuntando al puerto 4040
-- La Voice URL en TwiML App debe ser: `https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`
+**Note**: The configured ngrok URL is `https://alton-aerobiologic-pulchritudinously.ngrok-free.dev`
+- Make sure ngrok is running and pointing to port 4040
+- The Voice URL in TwiML App must be: `https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`
 
-## Endpoints del Backend
+## Backend Endpoints
 
-- `GET /token?identity=agente123` - Genera un Access Token para el cliente web
-- `POST /voice` - Maneja llamadas entrantes y genera TwiML
-- `POST /studio/execute` - Dispara una ejecución de Studio Flow
+- `GET /token?identity=agent123` - Generates an Access Token for the web client
+- `POST /voice` - Handles incoming calls and generates TwiML
+- `POST /studio/execute` - Triggers a Studio Flow execution
 
-## Requisitos
+## Requirements
 
 - Node.js 18+
-- Cuenta de Twilio con número Voice-capable
-- HTTPS para producción (o ngrok para desarrollo)
-- Permisos de micrófono en el navegador
-- Navegador moderno con soporte WebRTC (Chrome, Firefox, Edge, Safari)
+- Twilio account with Voice-capable number
+- HTTPS for production (or ngrok for development)
+- Microphone permissions in browser
+- Modern browser with WebRTC support (Chrome, Firefox, Edge, Safari)
 
-## Características VoIP Detalladas
+## Detailed VoIP Features
 
-### Calidad de Audio
-- **Codec Opus**: Priorizado para mejor calidad de audio VoIP
-- **Codec PCMU**: Fallback para compatibilidad
-- **Configuración RTC**: Estadísticas en tiempo real de la conexión
+### Audio Quality
+- **Opus Codec**: Prioritized for better VoIP audio quality
+- **PCMU Codec**: Fallback for compatibility
+- **RTC Configuration**: Real-time connection statistics
 
-### Controles Durante la Llamada
-- **Mute/Unmute**: Silenciar y activar micrófono durante la llamada
-- **Estadísticas**: Ver codec usado, estado y duración de la llamada
-- **Manejo de eventos**: Aceptar, rechazar, cancelar, desconectar
+### During Call Controls
+- **Mute/Unmute**: Mute and unmute microphone during call
+- **Statistics**: View codec used, status and call duration
+- **Event handling**: Accept, reject, cancel, disconnect
 
-### Reconexión y Estabilidad
-- **Renovación automática de tokens**: Los tokens se renuevan automáticamente antes de expirar
-- **Manejo de errores**: Errores de conexión, red y dispositivo manejados correctamente
-- **Logs detallados**: Nivel de log configurado para debugging VoIP
+### Reconnection and Stability
+- **Automatic token renewal**: Tokens are automatically renewed before expiring
+- **Error handling**: Connection, network and device errors handled correctly
+- **Detailed logs**: Log level configured for VoIP debugging
