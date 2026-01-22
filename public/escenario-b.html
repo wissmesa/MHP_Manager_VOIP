@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escenario B: Click-to-Call - Llamar desde Navegador a PSTN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #f5576c;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #e0485c;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #7f8c8d;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 60px;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .status.warning {
+            background: #fff3e0;
+            color: #f57c00;
+            border-left: 4px solid #f57c00;
+        }
+
+        .call-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .call-info.active {
+            display: block;
+        }
+
+        .call-info p {
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .audio-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .audio-controls button {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .stats {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            font-size: 12px;
+            display: none;
+        }
+
+        .stats.active {
+            display: block;
+        }
+
+        .stats p {
+            margin: 3px 0;
+            color: #666;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #f5576c;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Click-to-Call</h1>
+        <p class="subtitle">Escenario B: Llamar desde navegador a número PSTN</p>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="direct">Directo (TwiML)</button>
+            <button class="tab" data-tab="studio">Con Studio</button>
+        </div>
+
+        <!-- Tab 1: Llamada Directa (TwiML) -->
+        <div id="direct" class="tab-content active">
+            <div class="input-group">
+                <label for="identity1">Identity del Usuario:</label>
+                <input type="text" id="identity1" value="usuario123" placeholder="usuario123">
+            </div>
+
+            <div class="input-group">
+                <label for="phoneNumber">Número de Teléfono (PSTN):</label>
+                <input type="tel" id="phoneNumber" value="+14063445815" placeholder="+14063445815">
+            </div>
+
+            <div class="button-group">
+                <button id="register1" class="btn-primary">Conectar</button>
+                <button id="callDirect" class="btn-success" disabled>Llamar</button>
+                <button id="hangup1" class="btn-danger" disabled>Colgar</button>
+            </div>
+
+            <div id="status1" class="status info">
+                ⏳ Desconectado. Haz clic en "Conectar" primero.
+            </div>
+
+            <div id="callInfo1" class="call-info">
+                <p><strong>Llamada VoIP Activa</strong></p>
+                <p id="callTo1"></p>
+                
+                <div class="audio-controls">
+                    <button id="muteBtn1" class="btn-secondary" style="flex: 1;">🔇 Silenciar</button>
+                    <button id="unmuteBtn1" class="btn-secondary" style="flex: 1; display: none;">🔊 Activar</button>
+                </div>
+
+                <div id="stats1" class="stats">
+                    <p><strong>Estadísticas VoIP:</strong></p>
+                    <p>Codec: <span id="codec1">-</span></p>
+                    <p>Estado: <span id="callStatus1">-</span></p>
+                    <p>Duración: <span id="duration1">00:00</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Llamada con Studio -->
+        <div id="studio" class="tab-content">
+            <div class="input-group">
+                <label for="identity2">Identity del Agente:</label>
+                <input type="text" id="identity2" value="agente123" placeholder="agente123">
+            </div>
+
+            <div class="input-group">
+                <label for="customerPhone">Número del Cliente (PSTN):</label>
+                <input type="tel" id="customerPhone" value="+14063445815" placeholder="+14063445815">
+            </div>
+
+            <div class="button-group">
+                <button id="register2" class="btn-primary">Conectar</button>
+                <button id="callStudio" class="btn-success" disabled>Llamar con Studio</button>
+                <button id="hangup2" class="btn-danger" disabled>Colgar</button>
+            </div>
+
+            <div id="status2" class="status info">
+                ⏳ Desconectado. Haz clic en "Conectar" primero.
+            </div>
+
+            <div id="callInfo2" class="call-info">
+                <p><strong>Llamada VoIP Activa</strong></p>
+                <p id="callTo2"></p>
+                
+                <div class="audio-controls">
+                    <button id="muteBtn2" class="btn-secondary" style="flex: 1;">🔇 Silenciar</button>
+                    <button id="unmuteBtn2" class="btn-secondary" style="flex: 1; display: none;">🔊 Activar</button>
+                </div>
+
+                <div id="stats2" class="stats">
+                    <p><strong>Estadísticas VoIP:</strong></p>
+                    <p>Codec: <span id="codec2">-</span></p>
+                    <p>Estado: <span id="callStatus2">-</span></p>
+                    <p>Duración: <span id="duration2">00:00</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cargar el SDK de Twilio Voice SDK 2.x desde CDN -->
+    <!-- Intentar múltiples CDNs en caso de que uno falle -->
+    <script>
+        (function() {
+            const CDNs = [
+                // SDK 2.x desde npm (más confiable)
+                'https://unpkg.com/@twilio/voice-sdk@2.7.2/dist/twilio.min.js',
+                'https://cdn.jsdelivr.net/npm/@twilio/voice-sdk@2.7.2/dist/twilio.min.js',
+                // Versión sin minificar para debugging
+                'https://unpkg.com/@twilio/voice-sdk@2.7.2/dist/twilio.js',
+                // Versiones anteriores del SDK 2.x
+                'https://unpkg.com/@twilio/voice-sdk@2.6.0/dist/twilio.min.js',
+                'https://unpkg.com/@twilio/voice-sdk@2.5.0/dist/twilio.min.js',
+                // CDN oficial de Twilio (puede no tener 2.x)
+                'https://sdk.twilio.com/js/client/releases/2.7.2/twilio.min.js',
+                'https://sdk.twilio.com/js/client/releases/2.6.0/twilio.min.js'
+            ];
+            
+            let loaded = false;
+            let currentIndex = 0;
+            
+            function loadScript(src) {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.async = true;
+                    script.defer = true;
+                    
+                    script.onload = () => {
+                        console.log(`✅ Script cargado desde: ${src}`);
+                        // Esperar un momento para que el SDK se inicialice
+                        setTimeout(() => {
+                            if (typeof window.Twilio !== 'undefined' || typeof Twilio !== 'undefined') {
+                                loaded = true;
+                                resolve();
+                            } else {
+                                console.warn(`⚠️ Script cargado pero Twilio no está disponible aún`);
+                                // Dar más tiempo
+                                setTimeout(() => {
+                                    if (typeof window.Twilio !== 'undefined' || typeof Twilio !== 'undefined') {
+                                        loaded = true;
+                                        resolve();
+                                    } else {
+                                        reject(new Error('Twilio no se inicializó'));
+                                    }
+                                }, 1000);
+                            }
+                        }, 500);
+                    };
+                    
+                    script.onerror = () => {
+                        console.warn(`❌ Error cargando desde: ${src}`);
+                        reject(new Error(`Error cargando ${src}`));
+                    };
+                    
+                    document.head.appendChild(script);
+                });
+            }
+            
+            async function tryLoad() {
+                for (let i = 0; i < CDNs.length; i++) {
+                    try {
+                        await loadScript(CDNs[i]);
+                        if (loaded) {
+                            console.log(`✅ Twilio SDK cargado exitosamente desde: ${CDNs[i]}`);
+                            return;
+                        }
+                    } catch (error) {
+                        console.warn(`⚠️ Intento ${i + 1} falló:`, error.message);
+                        if (i === CDNs.length - 1) {
+                            console.error('❌ Todos los CDNs fallaron');
+                        }
+                    }
+                }
+            }
+            
+            // Cargar cuando el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', tryLoad);
+            } else {
+                tryLoad();
+            }
+        })();
+    </script>
+    
+    <script type="module">
+        // Esperar a que el SDK se cargue completamente
+        let Device;
+        
+        // Función para esperar a que Twilio esté disponible
+        async function waitForTwilio() {
+            let attempts = 0;
+            const maxAttempts = 100; // 10 segundos máximo
+            
+            console.log("⏳ Esperando a que Twilio SDK se cargue...");
+            
+            while (attempts < maxAttempts) {
+                // Verificar múltiples formas en que Twilio puede estar disponible
+                let TwilioObj = null;
+                
+                // 1. Verificar window.Twilio
+                if (typeof window !== 'undefined' && window.Twilio) {
+                    TwilioObj = window.Twilio;
+                    console.log("📦 Twilio encontrado en window.Twilio");
+                }
+                // 2. Verificar Twilio global
+                else if (typeof Twilio !== 'undefined') {
+                    TwilioObj = Twilio;
+                    console.log("📦 Twilio encontrado globalmente");
+                }
+                // 3. Verificar si hay algún objeto con Device
+                else if (typeof window !== 'undefined') {
+                    // Buscar cualquier propiedad que pueda ser Twilio
+                    for (const key in window) {
+                        if (window[key] && typeof window[key] === 'object' && window[key].Device) {
+                            TwilioObj = window[key];
+                            console.log(`📦 Twilio encontrado en window.${key}`);
+                            break;
+                        }
+                    }
+                }
+                
+                if (TwilioObj) {
+                    // Intentar obtener Device de diferentes formas
+                    Device = TwilioObj.Device || 
+                             TwilioObj.default?.Device || 
+                             (TwilioObj.constructor && TwilioObj.constructor.name === 'Device' ? TwilioObj : null);
+                    
+                    if (Device && typeof Device === 'function') {
+                        console.log("✅ Twilio Device disponible:", typeof Device);
+                        console.log("📋 Device constructor:", Device.name || 'anonymous');
+                        return Device;
+                    } else {
+                        console.log("⚠️ Twilio encontrado pero Device no está disponible");
+                        console.log("📋 Propiedades de Twilio:", Object.keys(TwilioObj));
+                    }
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+                
+                if (attempts % 10 === 0) {
+                    console.log(`⏳ Esperando... (${attempts * 100}ms)`);
+                    console.log("🔍 Estado actual:");
+                    console.log("  - window.Twilio:", typeof window !== 'undefined' ? typeof window.Twilio : 'N/A');
+                    console.log("  - Twilio global:", typeof Twilio);
+                }
+            }
+            
+            console.error("❌ Twilio SDK no se cargó después de 10 segundos");
+            console.error("Verifica:");
+            console.error("1. Tu conexión a internet");
+            console.error("2. Que el CDN de Twilio esté accesible");
+            console.error("3. La consola del navegador para errores de red");
+            
+            throw new Error("Twilio SDK no se cargó. Verifica tu conexión a internet.");
+        }
+        
+        // Esperar a que el SDK esté listo antes de continuar
+        try {
+            Device = await waitForTwilio();
+        } catch (error) {
+            console.error("❌ Error fatal:", error);
+            // Mostrar error en la página
+            document.body.innerHTML = `
+                <div style="padding: 20px; text-align: center; font-family: Arial;">
+                    <h2>❌ Error cargando Twilio SDK</h2>
+                    <p>${error.message}</p>
+                    <p>Por favor, verifica tu conexión a internet y recarga la página.</p>
+                </div>
+            `;
+            throw error;
+        }
+
+        // Tabs
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+                document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+                tab.classList.add("active");
+                document.getElementById(tabName).classList.add("active");
+            });
+        });
+
+        // ========== TAB 1: Llamada Directa (TwiML) ==========
+        let device1 = null;
+        let activeCall1 = null;
+        const statusEl1 = document.getElementById("status1");
+        const registerBtn1 = document.getElementById("register1");
+        const callDirectBtn = document.getElementById("callDirect");
+        const hangupBtn1 = document.getElementById("hangup1");
+        const identityInput1 = document.getElementById("identity1");
+        const phoneInput1 = document.getElementById("phoneNumber");
+        const callInfoEl1 = document.getElementById("callInfo1");
+
+        function updateStatus1(message, type = "info") {
+            statusEl1.textContent = message;
+            statusEl1.className = `status ${type}`;
+        }
+
+        async function getToken1(identity) {
+            try {
+                console.log(`🔑 Obteniendo token para identity: ${identity}`);
+                
+                // Detectar si estamos en file:// y usar URL absoluta
+                let baseUrl = '';
+                if (window.location.protocol === 'file:') {
+                    console.error('❌ ERROR: Estás abriendo el archivo directamente desde el sistema de archivos.');
+                    console.error('⚠️ Debes acceder a través del servidor: http://localhost:4040/escenario-b.html');
+                    throw new Error('Debes acceder a través del servidor. Abre: http://localhost:4040/escenario-b.html');
+                }
+                
+                const url = `${baseUrl}/token?identity=${encodeURIComponent(identity)}`;
+                console.log(`📡 URL: ${url}`);
+                
+                const response = await fetch(url);
+                console.log(`📥 Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`❌ Error response:`, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`✅ Token recibido para: ${data.identity}`);
+                
+                if (!data.token) {
+                    throw new Error("Token no recibido en la respuesta");
+                }
+                
+                return data.token;
+            } catch (error) {
+                console.error(`❌ Error completo:`, error);
+                throw new Error(`Error obteniendo token: ${error.message}`);
+            }
+        }
+
+        registerBtn1.onclick = async () => {
+            const identity = identityInput1.value.trim() || "usuario123";
+            
+            console.log(`🚀 Iniciando conexión para identity: ${identity}`);
+            
+            try {
+                updateStatus1("⏳ Obteniendo token...", "info");
+                registerBtn1.disabled = true;
+
+                const token = await getToken1(identity);
+                console.log(`✅ Token obtenido, iniciando registro del dispositivo...`);
+
+                updateStatus1("⏳ Registrando dispositivo VoIP...", "info");
+
+                // Configuración optimizada para VoIP
+                device1 = new Device(token, { 
+                    logLevel: 1,
+                    // Priorizar Opus para mejor calidad VoIP, luego PCMU como fallback
+                    codecPreferences: ['opus', 'pcmu'],
+                    allowIncomingWhileBusy: false,
+                    fakeLocalDTMF: false,
+                    enableRTCStats: true
+                });
+
+                device1.on("registered", () => {
+                    updateStatus1(`✅ Registrado como "${identity}" (VoIP activo). Listo para hacer llamadas.`, "success");
+                    registerBtn1.disabled = true;
+                    registerBtn1.textContent = "Conectado";
+                    callDirectBtn.disabled = false;
+                });
+
+                device1.on("tokenWillExpire", async () => {
+                    updateStatus1("⚠️ Token expirando, renovando...", "warning");
+                    try {
+                        const newToken = await getToken1(identity);
+                        await device1.updateToken(newToken);
+                        updateStatus1("✅ Token renovado", "success");
+                    } catch (error) {
+                        updateStatus1(`❌ Error renovando token: ${error.message}`, "error");
+                    }
+                });
+
+                device1.on("error", (error) => {
+                    updateStatus1(`❌ Error: ${error.message}`, "error");
+                    registerBtn1.disabled = false;
+                    registerBtn1.textContent = "Conectar";
+                });
+
+                console.log(`📞 Registrando dispositivo con Twilio...`);
+                await device1.register();
+                console.log(`✅ Dispositivo registrado exitosamente`);
+            } catch (error) {
+                console.error(`❌ Error en el proceso de conexión:`, error);
+                updateStatus1(`❌ Error: ${error.message}`, "error");
+                registerBtn1.disabled = false;
+                registerBtn1.textContent = "Conectar";
+            }
+        };
+
+        callDirectBtn.onclick = async () => {
+            const phoneNumber = phoneInput1.value.trim();
+            
+            if (!phoneNumber) {
+                updateStatus1("❌ Por favor ingresa un número de teléfono", "error");
+                return;
+            }
+
+            if (!device1) {
+                updateStatus1("❌ Primero debes conectarte", "error");
+                return;
+            }
+
+            try {
+                callDirectBtn.disabled = true;
+                updateStatus1(`📞 Llamando a ${phoneNumber}...`, "warning");
+
+                activeCall1 = await device1.connect({
+                    params: { To: phoneNumber }
+                });
+
+                document.getElementById("callTo1").textContent = `Llamando a: ${phoneNumber}`;
+                callInfoEl1.classList.add("active");
+                document.getElementById("stats1").classList.add("active");
+                hangupBtn1.disabled = false;
+
+                // Iniciar contador de duración
+                let startTime1 = Date.now();
+                const durationInterval1 = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime1) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    document.getElementById("duration1").textContent = 
+                        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }, 1000);
+
+                activeCall1.on("accept", () => {
+                    updateStatus1(`✅ Llamada VoIP conectada a ${phoneNumber}`, "success");
+                    document.getElementById("callStatus1").textContent = "Conectada";
+                    if (activeCall1.codec) {
+                        document.getElementById("codec1").textContent = activeCall1.codec.toUpperCase();
+                    }
+                });
+
+                activeCall1.on("disconnect", () => {
+                    clearInterval(durationInterval1);
+                    updateStatus1("☎️ Llamada VoIP terminada", "info");
+                    activeCall1 = null;
+                    hangupBtn1.disabled = true;
+                    callInfoEl1.classList.remove("active");
+                    document.getElementById("stats1").classList.remove("active");
+                    callDirectBtn.disabled = false;
+                    document.getElementById("muteBtn1").style.display = "block";
+                    document.getElementById("unmuteBtn1").style.display = "none";
+                });
+
+                activeCall1.on("cancel", () => {
+                    clearInterval(durationInterval1);
+                    updateStatus1("📵 Llamada cancelada", "info");
+                    activeCall1 = null;
+                    hangupBtn1.disabled = true;
+                    callInfoEl1.classList.remove("active");
+                    document.getElementById("stats1").classList.remove("active");
+                    callDirectBtn.disabled = false;
+                });
+
+                activeCall1.on("error", (error) => {
+                    clearInterval(durationInterval1);
+                    console.error("Error en llamada VoIP:", error);
+                    updateStatus1(`❌ Error en llamada: ${error.message}`, "error");
+                });
+
+            } catch (error) {
+                updateStatus1(`❌ Error: ${error.message}`, "error");
+                callDirectBtn.disabled = false;
+            }
+        };
+
+        hangupBtn1.onclick = () => {
+            if (activeCall1) {
+                activeCall1.disconnect();
+                activeCall1 = null;
+                hangupBtn1.disabled = true;
+                callInfoEl1.classList.remove("active");
+                document.getElementById("stats1").classList.remove("active");
+                callDirectBtn.disabled = false;
+            }
+        };
+
+        // Controles de audio VoIP - Tab 1
+        const muteBtn1 = document.getElementById("muteBtn1");
+        const unmuteBtn1 = document.getElementById("unmuteBtn1");
+
+        muteBtn1.onclick = () => {
+            if (activeCall1) {
+                activeCall1.mute(true);
+                muteBtn1.style.display = "none";
+                unmuteBtn1.style.display = "block";
+            }
+        };
+
+        unmuteBtn1.onclick = () => {
+            if (activeCall1) {
+                activeCall1.mute(false);
+                muteBtn1.style.display = "block";
+                unmuteBtn1.style.display = "none";
+            }
+        };
+
+        // ========== TAB 2: Llamada con Studio ==========
+        let device2 = null;
+        let activeCall2 = null;
+        const statusEl2 = document.getElementById("status2");
+        const registerBtn2 = document.getElementById("register2");
+        const callStudioBtn = document.getElementById("callStudio");
+        const hangupBtn2 = document.getElementById("hangup2");
+        const identityInput2 = document.getElementById("identity2");
+        const customerPhoneInput = document.getElementById("customerPhone");
+        const callInfoEl2 = document.getElementById("callInfo2");
+
+        function updateStatus2(message, type = "info") {
+            statusEl2.textContent = message;
+            statusEl2.className = `status ${type}`;
+        }
+
+        async function getToken2(identity) {
+            try {
+                // Detectar si estamos en file://
+                if (window.location.protocol === 'file:') {
+                    throw new Error('Debes acceder a través del servidor. Abre: http://localhost:4040/escenario-b.html');
+                }
+                
+                const response = await fetch(`/token?identity=${encodeURIComponent(identity)}`);
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || "Error obteniendo token");
+                }
+                return data.token;
+            } catch (error) {
+                throw new Error(`Error obteniendo token: ${error.message}`);
+            }
+        }
+
+        registerBtn2.onclick = async () => {
+            const identity = identityInput2.value.trim() || "agente123";
+            
+            try {
+                updateStatus2("⏳ Obteniendo token...", "info");
+                registerBtn2.disabled = true;
+
+                const token = await getToken2(identity);
+
+                updateStatus2("⏳ Registrando dispositivo...", "info");
+
+                // Configuración optimizada para VoIP
+                device2 = new Device(token, { 
+                    logLevel: 1,
+                    codecPreferences: ['opus', 'pcmu'],
+                    allowIncomingWhileBusy: false,
+                    fakeLocalDTMF: false,
+                    enableRTCStats: true
+                });
+
+                device2.on("registered", () => {
+                    updateStatus2(`✅ Registrado como "${identity}" (VoIP activo). Listo para llamadas con Studio.`, "success");
+                    registerBtn2.disabled = true;
+                    registerBtn2.textContent = "Conectado";
+                    callStudioBtn.disabled = false;
+                });
+
+                device2.on("tokenWillExpire", async () => {
+                    updateStatus2("⚠️ Token expirando, renovando...", "warning");
+                    try {
+                        const newToken = await getToken2(identity);
+                        await device2.updateToken(newToken);
+                        updateStatus2("✅ Token renovado", "success");
+                    } catch (error) {
+                        updateStatus2(`❌ Error renovando token: ${error.message}`, "error");
+                    }
+                });
+
+                device2.on("error", (error) => {
+                    updateStatus2(`❌ Error: ${error.message}`, "error");
+                    registerBtn2.disabled = false;
+                    registerBtn2.textContent = "Conectar";
+                });
+
+                device2.on("incoming", (call) => {
+                    updateStatus2("📞 Llamada VoIP entrante desde Studio...", "warning");
+                    activeCall2 = call;
+                    hangupBtn2.disabled = false;
+
+                    document.getElementById("callTo2").textContent = `Llamada desde Studio`;
+                    callInfoEl2.classList.add("active");
+                    document.getElementById("stats2").classList.add("active");
+
+                    call.accept();
+                    updateStatus2("✅ Llamada VoIP conectada", "success");
+
+                    // Iniciar contador de duración
+                    let startTime2 = Date.now();
+                    const durationInterval2 = setInterval(() => {
+                        const elapsed = Math.floor((Date.now() - startTime2) / 1000);
+                        const minutes = Math.floor(elapsed / 60);
+                        const seconds = elapsed % 60;
+                        document.getElementById("duration2").textContent = 
+                            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }, 1000);
+
+                    call.on("accept", () => {
+                        updateStatus2("✅ Llamada VoIP aceptada", "success");
+                        document.getElementById("callStatus2").textContent = "Conectada";
+                        if (call.codec) {
+                            document.getElementById("codec2").textContent = call.codec.toUpperCase();
+                        }
+                    });
+
+                    call.on("disconnect", () => {
+                        clearInterval(durationInterval2);
+                        updateStatus2("☎️ Llamada VoIP terminada", "info");
+                        activeCall2 = null;
+                        hangupBtn2.disabled = true;
+                        callInfoEl2.classList.remove("active");
+                        document.getElementById("stats2").classList.remove("active");
+                        document.getElementById("muteBtn2").style.display = "block";
+                        document.getElementById("unmuteBtn2").style.display = "none";
+                    });
+
+                    call.on("cancel", () => {
+                        clearInterval(durationInterval2);
+                        updateStatus2("📵 Llamada cancelada", "info");
+                        activeCall2 = null;
+                        hangupBtn2.disabled = true;
+                        callInfoEl2.classList.remove("active");
+                        document.getElementById("stats2").classList.remove("active");
+                    });
+
+                    call.on("reject", () => {
+                        clearInterval(durationInterval2);
+                        updateStatus2("❌ Llamada rechazada", "error");
+                        activeCall2 = null;
+                        hangupBtn2.disabled = true;
+                        callInfoEl2.classList.remove("active");
+                        document.getElementById("stats2").classList.remove("active");
+                    });
+
+                    call.on("error", (error) => {
+                        clearInterval(durationInterval2);
+                        console.error("Error en llamada VoIP:", error);
+                        updateStatus2(`❌ Error en llamada: ${error.message}`, "error");
+                    });
+                });
+
+                await device2.register();
+            } catch (error) {
+                updateStatus2(`❌ Error: ${error.message}`, "error");
+                registerBtn2.disabled = false;
+                registerBtn2.textContent = "Conectar";
+            }
+        };
+
+        callStudioBtn.onclick = async () => {
+            const identity = identityInput2.value.trim() || "agente123";
+            const customerPhone = customerPhoneInput.value.trim();
+            
+            if (!customerPhone) {
+                updateStatus2("❌ Por favor ingresa el número del cliente", "error");
+                return;
+            }
+
+            try {
+                callStudioBtn.disabled = true;
+                updateStatus2("⏳ Disparando Studio Flow...", "info");
+
+                const response = await fetch("/studio/execute", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        identity: identity,
+                        to: customerPhone, // Número del cliente
+                        from: undefined,
+                        parameters: {
+                            agent: identity,
+                            customer: customerPhone
+                        }
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateStatus2(`✅ Studio Flow ejecutado. Deberías recibir una llamada pronto conectándote con ${customerPhone}. Execution SID: ${data.executionSid}`, "success");
+                    document.getElementById("callTo2").textContent = `Conectando con: ${customerPhone}`;
+                    callInfoEl2.classList.add("active");
+                } else {
+                    updateStatus2(`❌ Error: ${data.error || "Error desconocido"}`, "error");
+                }
+            } catch (error) {
+                updateStatus2(`❌ Error: ${error.message}`, "error");
+            } finally {
+                callStudioBtn.disabled = false;
+            }
+        };
+
+        hangupBtn2.onclick = () => {
+            if (activeCall2) {
+                activeCall2.disconnect();
+                activeCall2 = null;
+                hangupBtn2.disabled = true;
+                callInfoEl2.classList.remove("active");
+                document.getElementById("stats2").classList.remove("active");
+            }
+        };
+
+        // Controles de audio VoIP - Tab 2
+        const muteBtn2 = document.getElementById("muteBtn2");
+        const unmuteBtn2 = document.getElementById("unmuteBtn2");
+
+        muteBtn2.onclick = () => {
+            if (activeCall2) {
+                activeCall2.mute(true);
+                muteBtn2.style.display = "none";
+                unmuteBtn2.style.display = "block";
+            }
+        };
+
+        unmuteBtn2.onclick = () => {
+            if (activeCall2) {
+                activeCall2.mute(false);
+                muteBtn2.style.display = "block";
+                unmuteBtn2.style.display = "none";
+            }
+        };
+    </script>
+</body>
+</html>
