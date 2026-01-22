@@ -35,6 +35,10 @@ STUDIO_FLOW_SID=FWxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Server port (default: 4040)
 PORT=4040
+
+# Default agent identity for incoming calls (optional)
+# When someone calls your Twilio number, calls will be routed to this agent
+DEFAULT_AGENT_IDENTITY=agent123
 ```
 
 ## How to get credentials

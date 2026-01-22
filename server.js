@@ -13,6 +13,16 @@ app.use(cors());
 app.use(express.json());
 // Configuration to receive data from Twilio (application/x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
+
+// Log all incoming requests for debugging
+app.use((req, res, next) => {
+  console.log(`\n📥 ${req.method} ${req.path}`);
+  if (req.method === 'POST') {
+    console.log('Body:', req.body);
+  }
+  next();
+});
+
 app.use(express.static("public"));
 
 // Endpoint to generate Access Token
@@ -197,6 +207,75 @@ app.post("/voice", (req, res) => {
   res.type("text/xml").send(twiml.toString());
 });
 
+// Endpoint to handle incoming calls to your Twilio number
+// When someone calls +17752619018, Twilio will POST to this endpoint
+// Configure in Twilio Console > Phone Numbers > [Your Number] > Voice & Fax
+// URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/incoming-call
+// Also handles POST to "/" in case Twilio is configured to call root
+app.post("/incoming-call", handleIncomingCall);
+app.post("/", (req, res) => {
+  // Check if this is a Twilio call (has From, To, CallSid)
+  if (req.body.From && req.body.To && req.body.CallSid) {
+    console.log("\n⚠️ Incoming call detected at root path '/'. Redirecting to handler...");
+    return handleIncomingCall(req, res);
+  }
+  // Otherwise, return 404 for other POST requests to root
+  res.status(404).json({ error: "Not found. Use /incoming-call for incoming calls." });
+});
+
+function handleIncomingCall(req, res) {
+  console.log("\n🔔 INCOMING CALL ENDPOINT HIT!");
+  console.log("Request received at:", req.path);
+  const twiml = new twilio.twiml.VoiceResponse();
+  
+  // Log incoming call details
+  console.log("\n=== Incoming call received ===");
+  console.log("From:", req.body.From);
+  console.log("To:", req.body.To);
+  console.log("CallSid:", req.body.CallSid);
+  console.log("Direction:", req.body.Direction);
+  
+  // Get the caller's number
+  const callerNumber = req.body.From;
+  const calledNumber = req.body.To; // Your Twilio number
+  
+  // Agent identity - you can modify this logic
+  // Option 1: Use a default agent identity
+  let agentIdentity = process.env.DEFAULT_AGENT_IDENTITY || "agent123";
+  
+  // Option 2: Route based on caller number (uncomment to use)
+  // if (callerNumber === "+14061234567") {
+  //   agentIdentity = "agent123";
+  // } else if (callerNumber === "+14069876543") {
+  //   agentIdentity = "agent456";
+  // }
+  
+  // Option 3: Use query parameter to specify agent (if passed)
+  if (req.query.agent) {
+    agentIdentity = req.query.agent;
+  }
+  
+  console.log(`Routing call to web client: client:${agentIdentity}`);
+  
+  // Dial the web client
+  const dial = twiml.dial({
+    callerId: calledNumber, // Show your Twilio number as caller ID
+    timeout: 30, // Wait up to 30 seconds for agent to answer
+    answerOnMedia: false,
+  });
+  
+  // Connect to the web client using Client identity
+  dial.client(agentIdentity);
+  
+  // Optional: If agent doesn't answer, you can add a fallback
+  // Uncomment the following lines to add a message if agent doesn't answer:
+  // twiml.say("The agent is not available. Please try again later.");
+  
+  console.log(`TwiML generated: Dialing client:${agentIdentity}\n`);
+  
+  res.type("text/xml").send(twiml.toString());
+}
+
 // Endpoint to trigger Studio Flow Execution
 // Scenario A: Studio calls the browser
 app.post("/studio/execute", async (req, res) => {
@@ -246,9 +325,13 @@ app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📞 Token endpoint: http://localhost:${PORT}/token`);
   console.log(`🎤 Voice endpoint: http://localhost:${PORT}/voice`);
+  console.log(`📥 Incoming call endpoint: http://localhost:${PORT}/incoming-call`);
   console.log(`🎬 Studio endpoint: http://localhost:${PORT}/studio/execute`);
   console.log(`\n🌐 ngrok URL configured:`);
   console.log(`   https://alton-aerobiologic-pulchritudinously.ngrok-free.dev`);
   console.log(`   Voice URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`);
-  console.log(`\n⚠️  Make sure to configure this URL in Twilio Console > TwiML Apps`);
+  console.log(`   Incoming Call URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/incoming-call`);
+  console.log(`\n⚠️  Make sure to configure these URLs in Twilio Console:`);
+  console.log(`   - TwiML Apps > Voice URL`);
+  console.log(`   - Phone Numbers > [Your Number] > Voice & Fax > A CALL COMES IN`);
 });
