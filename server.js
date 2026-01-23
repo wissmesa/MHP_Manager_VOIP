@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import { existsSync, readdirSync } from "fs";
+import http from "http";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,9 +36,14 @@ const app = express();
 // This MUST respond immediately - Railway uses this to verify the server is alive
 // Use the absolute simplest response possible - no Express methods, just raw response
 app.get("/health", (req, res) => {
+  // Absolutely no processing - just respond
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('OK');
 });
+
+// Also handle health check on root - some Railway configs check root path
+// This must be after middlewares are set up to access req.get()
+// But we'll handle it in the middleware chain instead
 
 // Import Twilio after health check is set up
 import twilio from "twilio";
@@ -58,11 +64,37 @@ app.use(express.json());
 // Configuration to receive data from Twilio (application/x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
 
+// Handle health checks on root path - Railway sometimes checks root instead of /health
+// This middleware runs early to catch health checks before they reach other handlers
+app.use((req, res, next) => {
+  // Simple check: if it's a GET to root with no query params, it might be a health check
+  // We'll be conservative and only respond with OK if it looks like a health check
+  if (req.path === '/' && req.method === 'GET' && Object.keys(req.query).length === 0) {
+    // Check headers if available (they might not be parsed yet)
+    const headers = req.headers || {};
+    const userAgent = headers['user-agent'] || '';
+    
+    // Railway health checks often have no user-agent or specific patterns
+    // But to be safe, we'll only treat it as health check if it's clearly one
+    // Otherwise, let it fall through to serve index.html
+    if (!userAgent || 
+        userAgent.includes('Railway') || 
+        userAgent.includes('health') ||
+        userAgent.includes('curl') ||
+        headers['x-railway-health-check'] === 'true') {
+      // This is likely a health check - respond immediately
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      return res.end('OK');
+    }
+  }
+  next();
+});
+
 // Log all incoming requests for debugging (but don't block)
 // BUT skip logging for health checks to avoid blocking
 app.use((req, res, next) => {
   // Skip logging for health checks to ensure fast response
-  if (req.path === '/health') {
+  if (req.path === '/health' || req.path === '/') {
     return next();
   }
   try {
@@ -76,7 +108,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve index.html for root GET request (before static files to ensure it's served)
+// Serve index.html for root GET request (this will only be called if it's not a health check)
+// The health check handler above will catch health check requests first
 app.get("/", (req, res) => {
   console.log("📄 Serving index.html for GET /");
   const indexPath = path.join(__dirname, "public", "index.html");
@@ -468,7 +501,6 @@ const server = app.listen(PORT, HOST, () => {
   
   // Test health endpoint immediately to ensure it's working
   setTimeout(() => {
-    const http = require('http');
     const testReq = http.get(`http://${HOST}:${PORT}/health`, (testRes) => {
       let data = '';
       testRes.on('data', (chunk) => { data += chunk; });
