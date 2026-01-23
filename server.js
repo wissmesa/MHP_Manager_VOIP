@@ -48,8 +48,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, "public")));
-
 // Health check endpoint for Railway
 app.get("/health", (req, res) => {
   res.status(200).json({ 
@@ -58,6 +56,31 @@ app.get("/health", (req, res) => {
     uptime: process.uptime()
   });
 });
+
+// Serve index.html for root GET request (before static files to ensure it's served)
+app.get("/", (req, res) => {
+  console.log("📄 Serving index.html for GET /");
+  const indexPath = path.join(__dirname, "public", "index.html");
+  console.log("📄 Index file path:", indexPath);
+  
+  // Verify file exists before sending
+  if (!existsSync(indexPath)) {
+    console.error("❌ ERROR: index.html not found at:", indexPath);
+    return res.status(404).send("index.html not found");
+  }
+  
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error("❌ Error sending index.html:", err);
+      res.status(500).send("Error loading index.html");
+    } else {
+      console.log("✅ index.html sent successfully");
+    }
+  });
+});
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, "public")));
 
 // Endpoint to generate Access Token
 app.get("/token", (req, res) => {
@@ -255,11 +278,6 @@ app.post("/", (req, res) => {
   }
   // Otherwise, return 404 for other POST requests to root
   res.status(404).json({ error: "Not found. Use /incoming-call for incoming calls." });
-});
-
-// Serve index.html for root GET request
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 function handleIncomingCall(req, res) {
