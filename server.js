@@ -16,9 +16,9 @@ console.log('📁 __dirname:', __dirname);
 const publicPath = path.join(__dirname, "public");
 console.log('📁 Public path:', publicPath);
 
-// Verify public directory exists
+// Verify public directory exists (but don't exit if it doesn't - just log warning)
 if (!existsSync(publicPath)) {
-  console.error('❌ ERROR: Public directory does not exist at:', publicPath);
+  console.error('⚠️ WARNING: Public directory does not exist at:', publicPath);
   console.error('📁 Available files in __dirname:');
   try {
     const files = readdirSync(__dirname);
@@ -26,7 +26,7 @@ if (!existsSync(publicPath)) {
   } catch (err) {
     console.error('Could not read directory:', err);
   }
-  process.exit(1);
+  console.error('⚠️ Server will continue but static files may not work');
 }
 
 const app = express();
@@ -34,7 +34,8 @@ const app = express();
 // Health check endpoint for Railway - MUST be first, before ANYTHING else
 // This MUST respond immediately - Railway uses this to verify the server is alive
 app.get("/health", (req, res) => {
-  res.status(200).send('OK');
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('OK');
 });
 
 // Import Twilio after health check is set up
