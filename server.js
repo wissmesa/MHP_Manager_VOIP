@@ -36,9 +36,12 @@ const app = express();
 // This MUST respond immediately - Railway uses this to verify the server is alive
 // Use the absolute simplest response possible - no Express methods, just raw response
 app.get("/health", (req, res) => {
-  // Absolutely no processing - just respond
+  // Log that health check was called (minimal logging to avoid blocking)
+  console.log('💚 Health check requested');
+  // Absolutely no processing - just respond immediately
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('OK');
+  console.log('✅ Health check responded with OK');
 });
 
 // Also handle health check on root - some Railway configs check root path
@@ -498,15 +501,20 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`📥 Incoming call endpoint: http://${HOST}:${PORT}/incoming-call`);
   console.log(`🎬 Studio endpoint: http://${HOST}:${PORT}/studio/execute`);
   console.log(`\n✅ Server is ready to accept connections`);
+  console.log(`\n⚠️ IMPORTANT: Railway will check /health endpoint`);
+  console.log(`   The endpoint must respond with 200 OK immediately`);
   
   // Test health endpoint immediately to ensure it's working
+  // Use a small delay to ensure server is fully ready
   setTimeout(() => {
+    console.log('🧪 Testing health check endpoint...');
     const testReq = http.get(`http://${HOST}:${PORT}/health`, (testRes) => {
       let data = '';
       testRes.on('data', (chunk) => { data += chunk; });
       testRes.on('end', () => {
         if (testRes.statusCode === 200 && data === 'OK') {
           console.log('✅ Health check endpoint verified and working');
+          console.log(`   Status: ${testRes.statusCode}, Response: ${data}`);
         } else {
           console.error(`❌ Health check test failed: Status ${testRes.statusCode}, Response: ${data}`);
         }
@@ -515,11 +523,11 @@ const server = app.listen(PORT, HOST, () => {
     testReq.on('error', (err) => {
       console.error(`❌ Health check test error: ${err.message}`);
     });
-    testReq.setTimeout(1000, () => {
+    testReq.setTimeout(2000, () => {
       console.error('❌ Health check test timeout');
       testReq.destroy();
     });
-  }, 100);
+  }, 50); // Small delay to ensure server is ready
 });
 
 // Set server timeout
