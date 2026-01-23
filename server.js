@@ -78,24 +78,31 @@ app.use(express.urlencoded({ extended: true }));
 
 // Handle health checks on root path - Railway sometimes checks root instead of /health
 // This middleware runs early to catch health checks before they reach other handlers
+// Be more aggressive - if it's a simple GET to root with no query, treat it as potential health check
 app.use((req, res, next) => {
-  // Simple check: if it's a GET to root with no query params, it might be a health check
-  // We'll be conservative and only respond with OK if it looks like a health check
+  // If it's a GET to root with no query params, check if it might be a health check
   if (req.path === '/' && req.method === 'GET' && Object.keys(req.query).length === 0) {
-    // Check headers if available (they might not be parsed yet)
     const headers = req.headers || {};
     const userAgent = headers['user-agent'] || '';
     
-    // Railway health checks often have no user-agent or specific patterns
-    // But to be safe, we'll only treat it as health check if it's clearly one
-    // Otherwise, let it fall through to serve index.html
-    if (!userAgent || 
-        userAgent.includes('Railway') || 
-        userAgent.includes('health') ||
-        userAgent.includes('curl') ||
-        headers['x-railway-health-check'] === 'true') {
+    // Railway health checks often have no user-agent or are from curl-like tools
+    // Be more permissive - if there's no user-agent or it's a simple request, treat as health check
+    const isLikelyHealthCheck = !userAgent || 
+                                userAgent.length === 0 ||
+                                userAgent.includes('Railway') || 
+                                userAgent.includes('health') ||
+                                userAgent.includes('curl') ||
+                                userAgent.includes('wget') ||
+                                headers['x-railway-health-check'] === 'true';
+    
+    if (isLikelyHealthCheck) {
       // This is likely a health check - respond immediately
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      console.log('💚 Health check detected on root path');
+      res.writeHead(200, { 
+        'Content-Type': 'text/plain',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
       return res.end('OK');
     }
   }
@@ -105,12 +112,10 @@ app.use((req, res, next) => {
 // Log all incoming requests for debugging (but don't block)
 // BUT skip logging for health checks to avoid blocking
 app.use((req, res, next) => {
-  // Skip logging for health checks to ensure fast response
-  if (req.path === '/health' || req.path === '/') {
-    return next();
-  }
+  // Log ALL requests including health checks for debugging
+  // This will help us see what Railway is actually calling
   try {
-    console.log(`\n📥 ${req.method} ${req.path}`);
+    console.log(`📥 ${req.method} ${req.path} - User-Agent: ${req.get('user-agent') || 'none'}`);
     if (req.method === 'POST' && req.body) {
       console.log('Body:', JSON.stringify(req.body).substring(0, 200)); // Limit log size
     }
