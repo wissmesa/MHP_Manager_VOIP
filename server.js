@@ -25,6 +25,15 @@ app.use((req, res, next) => {
 
 app.use(express.static("public"));
 
+// Health check endpoint for Railway
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 // Endpoint to generate Access Token
 app.get("/token", (req, res) => {
   const identity = req.query.identity || "agent123";
@@ -223,6 +232,11 @@ app.post("/", (req, res) => {
   res.status(404).json({ error: "Not found. Use /incoming-call for incoming calls." });
 });
 
+// Serve index.html for root GET request
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "public" });
+});
+
 function handleIncomingCall(req, res) {
   console.log("\n🔔 INCOMING CALL ENDPOINT HIT!");
   console.log("Request received at:", req.path);
@@ -320,13 +334,27 @@ app.post("/studio/execute", async (req, res) => {
   }
 });
 
+// Handle uncaught errors to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  // Don't exit, let the server continue running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit, let the server continue running
+});
+
 const PORT = process.env.PORT || 4040;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📞 Token endpoint: http://localhost:${PORT}/token`);
-  console.log(`🎤 Voice endpoint: http://localhost:${PORT}/voice`);
-  console.log(`📥 Incoming call endpoint: http://localhost:${PORT}/incoming-call`);
-  console.log(`🎬 Studio endpoint: http://localhost:${PORT}/studio/execute`);
+const HOST = process.env.HOST || '0.0.0.0'; // Railway needs 0.0.0.0 to accept external connections
+
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  console.log(`📞 Token endpoint: http://${HOST}:${PORT}/token`);
+  console.log(`🎤 Voice endpoint: http://${HOST}:${PORT}/voice`);
+  console.log(`📥 Incoming call endpoint: http://${HOST}:${PORT}/incoming-call`);
+  console.log(`🎬 Studio endpoint: http://${HOST}:${PORT}/studio/execute`);
+  console.log(`💚 Health check: http://${HOST}:${PORT}/health`);
   console.log(`\n🌐 ngrok URL configured:`);
   console.log(`   https://alton-aerobiologic-pulchritudinously.ngrok-free.dev`);
   console.log(`   Voice URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`);
@@ -334,4 +362,14 @@ app.listen(PORT, () => {
   console.log(`\n⚠️  Make sure to configure these URLs in Twilio Console:`);
   console.log(`   - TwiML Apps > Voice URL`);
   console.log(`   - Phone Numbers > [Your Number] > Voice & Fax > A CALL COMES IN`);
+});
+
+// Handle server errors
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+  } else {
+    console.error('❌ Server error:', error);
+  }
+  process.exit(1);
 });
