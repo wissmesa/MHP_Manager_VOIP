@@ -1,9 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import twilio from "twilio";
 import path from "path";
 import { fileURLToPath } from "url";
+import { existsSync, readdirSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +17,6 @@ const publicPath = path.join(__dirname, "public");
 console.log('📁 Public path:', publicPath);
 
 // Verify public directory exists
-import { existsSync, readdirSync } from "fs";
 if (!existsSync(publicPath)) {
   console.error('❌ ERROR: Public directory does not exist at:', publicPath);
   console.error('📁 Available files in __dirname:');
@@ -31,26 +30,22 @@ if (!existsSync(publicPath)) {
 }
 
 const app = express();
+
+// Import Twilio synchronously - if it fails, server won't start (which is fine)
+// This ensures server only starts if all dependencies are available
+import twilio from "twilio";
 const { AccessToken } = twilio.jwt;
 const { VoiceGrant } = AccessToken;
+console.log("✅ Twilio module loaded successfully");
 
 // Health check endpoint for Railway - MUST be first, before any middleware
+// Keep it super simple - no dependencies, no complex logic
 app.get("/health", (req, res) => {
-  try {
-    console.log("💚 Health check requested");
-    res.status(200).json({ 
-      status: "ok", 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      port: process.env.PORT || 4040
-    });
-  } catch (error) {
-    console.error("❌ Error in health check:", error);
-    res.status(500).json({ 
-      status: "error", 
-      error: error.message 
-    });
-  }
+  console.log("💚 Health check requested");
+  res.status(200).json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use(cors());
@@ -427,6 +422,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const PORT = process.env.PORT || 4040;
 const HOST = process.env.HOST || '0.0.0.0'; // Railway needs 0.0.0.0 to accept external connections
 
+// Set server timeout to prevent hanging requests
 const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 Server running on http://${HOST}:${PORT}`);
   console.log(`📞 Token endpoint: http://${HOST}:${PORT}/token`);
@@ -441,7 +437,13 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`\n⚠️  Make sure to configure these URLs in Twilio Console:`);
   console.log(`   - TwiML Apps > Voice URL`);
   console.log(`   - Phone Numbers > [Your Number] > Voice & Fax > A CALL COMES IN`);
+  console.log(`\n✅ Server is ready to accept connections`);
 });
+
+// Set server timeout
+server.timeout = 30000; // 30 seconds
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // 66 seconds
 
 // Handle server errors
 server.on('error', (error) => {
