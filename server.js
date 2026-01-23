@@ -555,8 +555,12 @@ server.headersTimeout = 66000; // 66 seconds
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
     console.error(`❌ Port ${PORT} is already in use`);
+    console.error('⚠️ This should not happen in Railway - port is assigned automatically');
+    // Don't exit immediately - try to continue
   } else {
     console.error('❌ Server error:', error);
+    console.error('⚠️ Server error occurred but continuing to run...');
+    // Don't exit - let the server try to recover
   }
-  process.exit(1);
+  // Don't exit - Railway will handle container lifecycle
 });
