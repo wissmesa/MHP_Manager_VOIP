@@ -10,6 +10,26 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
+// Log current working directory and paths for debugging
+console.log('📁 Current working directory:', process.cwd());
+console.log('📁 __dirname:', __dirname);
+const publicPath = path.join(__dirname, "public");
+console.log('📁 Public path:', publicPath);
+
+// Verify public directory exists
+import { existsSync, readdirSync } from "fs";
+if (!existsSync(publicPath)) {
+  console.error('❌ ERROR: Public directory does not exist at:', publicPath);
+  console.error('📁 Available files in __dirname:');
+  try {
+    const files = readdirSync(__dirname);
+    console.error(files);
+  } catch (err) {
+    console.error('Could not read directory:', err);
+  }
+  process.exit(1);
+}
+
 const app = express();
 const { AccessToken } = twilio.jwt;
 const { VoiceGrant } = AccessToken;
