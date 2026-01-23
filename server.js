@@ -36,12 +36,21 @@ const app = express();
 // This MUST respond immediately - Railway uses this to verify the server is alive
 // Use the absolute simplest response possible - no Express methods, just raw response
 app.get("/health", (req, res) => {
-  // Log that health check was called (minimal logging to avoid blocking)
-  console.log('💚 Health check requested');
+  // Log that health check was called (synchronous, before response)
+  console.log('💚 Health check requested at', new Date().toISOString());
   // Absolutely no processing - just respond immediately
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  // Use writeHead and end for fastest response
+  // Railway expects a 200 status code with any response
+  res.writeHead(200, { 
+    'Content-Type': 'text/plain',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
   res.end('OK');
-  console.log('✅ Health check responded with OK');
+  // Log after response is sent (async to not block)
+  setImmediate(() => {
+    console.log('✅ Health check responded with OK');
+  });
 });
 
 // Also handle health check on root - some Railway configs check root path
@@ -493,6 +502,7 @@ const PORT = process.env.PORT || 4040;
 const HOST = process.env.HOST || '0.0.0.0'; // Railway needs 0.0.0.0 to accept external connections
 
 // Set server timeout to prevent hanging requests
+// IMPORTANT: Make sure server is fully ready before Railway checks it
 const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 Server running on http://${HOST}:${PORT}`);
   console.log(`💚 Health check: http://${HOST}:${PORT}/health`);
@@ -503,9 +513,10 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`\n✅ Server is ready to accept connections`);
   console.log(`\n⚠️ IMPORTANT: Railway will check /health endpoint`);
   console.log(`   The endpoint must respond with 200 OK immediately`);
+  console.log(`\n📋 Server is listening and ready for health checks`);
   
   // Test health endpoint immediately to ensure it's working
-  // Use a small delay to ensure server is fully ready
+  // Use a very small delay to ensure server is fully ready
   setTimeout(() => {
     console.log('🧪 Testing health check endpoint...');
     const testReq = http.get(`http://${HOST}:${PORT}/health`, (testRes) => {
@@ -527,7 +538,7 @@ const server = app.listen(PORT, HOST, () => {
       console.error('❌ Health check test timeout');
       testReq.destroy();
     });
-  }, 50); // Small delay to ensure server is ready
+  }, 10); // Very small delay - server should be ready immediately
 });
 
 // Set server timeout
