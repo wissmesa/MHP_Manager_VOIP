@@ -2,6 +2,11 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import twilio from "twilio";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -23,7 +28,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 // Health check endpoint for Railway
 app.get("/health", (req, res) => {
@@ -234,7 +239,7 @@ app.post("/", (req, res) => {
 
 // Serve index.html for root GET request
 app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "public" });
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 function handleIncomingCall(req, res) {
