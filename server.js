@@ -31,19 +31,22 @@ if (!existsSync(publicPath)) {
 
 const app = express();
 
-// Import Twilio synchronously - if it fails, server won't start (which is fine)
-// This ensures server only starts if all dependencies are available
+// Health check endpoint for Railway - MUST be first, before ANYTHING else
+// This MUST respond immediately - Railway uses this to verify the server is alive
+app.get("/health", (req, res) => {
+  res.status(200).send('OK');
+});
+
+// Import Twilio after health check is set up
 import twilio from "twilio";
 const { AccessToken } = twilio.jwt;
 const { VoiceGrant } = AccessToken;
 console.log("✅ Twilio module loaded successfully");
 
-// Health check endpoint for Railway - MUST be first, before any middleware
-// Keep it super simple - no dependencies, no complex logic
-app.get("/health", (req, res) => {
-  console.log("💚 Health check requested");
+// Readiness check endpoint
+app.get("/ready", (req, res) => {
   res.status(200).json({ 
-    status: "ok", 
+    status: "ready", 
     timestamp: new Date().toISOString()
   });
 });
@@ -403,6 +406,30 @@ app.use((req, res) => {
     message: "Route not found" 
   });
 });
+
+// Handle graceful shutdown
+let isShuttingDown = false;
+
+const gracefulShutdown = (signal) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
+  console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+  
+  server.close(() => {
+    console.log('✅ HTTP server closed');
+    process.exit(0);
+  });
+  
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error('❌ Forcing shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle uncaught errors to prevent crashes
 process.on('uncaughtException', (error) => {
