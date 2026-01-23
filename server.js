@@ -33,6 +33,7 @@ const app = express();
 
 // Health check endpoint for Railway - MUST be first, before ANYTHING else
 // This MUST respond immediately - Railway uses this to verify the server is alive
+// Use the absolute simplest response possible - no Express methods, just raw response
 app.get("/health", (req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('OK');
@@ -58,7 +59,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Log all incoming requests for debugging (but don't block)
+// BUT skip logging for health checks to avoid blocking
 app.use((req, res, next) => {
+  // Skip logging for health checks to ensure fast response
+  if (req.path === '/health') {
+    return next();
+  }
   try {
     console.log(`\n📥 ${req.method} ${req.path}`);
     if (req.method === 'POST' && req.body) {
@@ -453,19 +459,35 @@ const HOST = process.env.HOST || '0.0.0.0'; // Railway needs 0.0.0.0 to accept e
 // Set server timeout to prevent hanging requests
 const server = app.listen(PORT, HOST, () => {
   console.log(`🚀 Server running on http://${HOST}:${PORT}`);
+  console.log(`💚 Health check: http://${HOST}:${PORT}/health`);
   console.log(`📞 Token endpoint: http://${HOST}:${PORT}/token`);
   console.log(`🎤 Voice endpoint: http://${HOST}:${PORT}/voice`);
   console.log(`📥 Incoming call endpoint: http://${HOST}:${PORT}/incoming-call`);
   console.log(`🎬 Studio endpoint: http://${HOST}:${PORT}/studio/execute`);
-  console.log(`💚 Health check: http://${HOST}:${PORT}/health`);
-  console.log(`\n🌐 ngrok URL configured:`);
-  console.log(`   https://alton-aerobiologic-pulchritudinously.ngrok-free.dev`);
-  console.log(`   Voice URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/voice`);
-  console.log(`   Incoming Call URL: https://alton-aerobiologic-pulchritudinously.ngrok-free.dev/incoming-call`);
-  console.log(`\n⚠️  Make sure to configure these URLs in Twilio Console:`);
-  console.log(`   - TwiML Apps > Voice URL`);
-  console.log(`   - Phone Numbers > [Your Number] > Voice & Fax > A CALL COMES IN`);
   console.log(`\n✅ Server is ready to accept connections`);
+  
+  // Test health endpoint immediately to ensure it's working
+  setTimeout(() => {
+    const http = require('http');
+    const testReq = http.get(`http://${HOST}:${PORT}/health`, (testRes) => {
+      let data = '';
+      testRes.on('data', (chunk) => { data += chunk; });
+      testRes.on('end', () => {
+        if (testRes.statusCode === 200 && data === 'OK') {
+          console.log('✅ Health check endpoint verified and working');
+        } else {
+          console.error(`❌ Health check test failed: Status ${testRes.statusCode}, Response: ${data}`);
+        }
+      });
+    });
+    testReq.on('error', (err) => {
+      console.error(`❌ Health check test error: ${err.message}`);
+    });
+    testReq.setTimeout(1000, () => {
+      console.error('❌ Health check test timeout');
+      testReq.destroy();
+    });
+  }, 100);
 });
 
 // Set server timeout
