@@ -34,27 +34,41 @@ const app = express();
 const { AccessToken } = twilio.jwt;
 const { VoiceGrant } = AccessToken;
 
+// Health check endpoint for Railway - MUST be first, before any middleware
+app.get("/health", (req, res) => {
+  try {
+    console.log("💚 Health check requested");
+    res.status(200).json({ 
+      status: "ok", 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      port: process.env.PORT || 4040
+    });
+  } catch (error) {
+    console.error("❌ Error in health check:", error);
+    res.status(500).json({ 
+      status: "error", 
+      error: error.message 
+    });
+  }
+});
+
 app.use(cors());
 app.use(express.json());
 // Configuration to receive data from Twilio (application/x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
 
-// Log all incoming requests for debugging
+// Log all incoming requests for debugging (but don't block)
 app.use((req, res, next) => {
-  console.log(`\n📥 ${req.method} ${req.path}`);
-  if (req.method === 'POST') {
-    console.log('Body:', req.body);
+  try {
+    console.log(`\n📥 ${req.method} ${req.path}`);
+    if (req.method === 'POST' && req.body) {
+      console.log('Body:', JSON.stringify(req.body).substring(0, 200)); // Limit log size
+    }
+  } catch (err) {
+    console.error('Error in logging middleware:', err);
   }
   next();
-});
-
-// Health check endpoint for Railway
-app.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "ok", 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
 });
 
 // Serve index.html for root GET request (before static files to ensure it's served)
@@ -377,14 +391,36 @@ app.post("/studio/execute", async (req, res) => {
   }
 });
 
+// Global error handler middleware (must be last)
+app.use((err, req, res, next) => {
+  console.error('❌ Express Error:', err);
+  res.status(500).json({ 
+    status: "error", 
+    message: err.message || "Internal server error" 
+  });
+});
+
+// Handle 404 for undefined routes
+app.use((req, res) => {
+  console.log(`⚠️ 404 - Route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ 
+    status: "error", 
+    message: "Route not found" 
+  });
+});
+
 // Handle uncaught errors to prevent crashes
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
   // Don't exit, let the server continue running
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  if (reason instanceof Error) {
+    console.error('Stack:', reason.stack);
+  }
   // Don't exit, let the server continue running
 });
 
